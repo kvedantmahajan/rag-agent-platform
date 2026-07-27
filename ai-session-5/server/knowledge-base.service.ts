@@ -23,11 +23,10 @@ export class KnowledgeBaseService implements OnModuleInit, OnModuleDestroy {
     private readonly pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     private readonly SIMILARITY_THRESHOLD = 0.55;
 
-    // Runs once at module startup. Model loads here, NOT per-request.
     async onModuleInit() {
         this.embedder = await pipeline(
             "feature-extraction",
-            "Xenova/all-MiniLM-L6-v2"
+            "Xenova/all-MiniLM-L6-v2",
         );
     }
 
@@ -51,7 +50,7 @@ export class KnowledgeBaseService implements OnModuleInit, OnModuleDestroy {
             WHERE 1-(embedding<=>$1::vector) > $2
             ORDER BY embedding <=> $1::vector
             LIMIT $3`,
-            [vecStr, this.SIMILARITY_THRESHOLD * 0.5, topK]
+            [vecStr, this.SIMILARITY_THRESHOLD * 0.5, topK],
         );
         const above = rows.filter((r) => r.similarity >= this.SIMILARITY_THRESHOLD);
         return {
@@ -60,14 +59,5 @@ export class KnowledgeBaseService implements OnModuleInit, OnModuleDestroy {
             topResult: rows[0] ?? null,
             hasConfidentMatch: above.length > 0,
         };
-    }
-
-    async ingestArticle(title: string, content: string): Promise<void> {
-        const vec = await this.embed(`${title}. ${content}`);
-        await this.pool.query(
-            `INSERT INTO kb_articles (title, content, embedding)
-        VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-            [title, content, `[${vec.join(",")}]`]
-        );
     }
 }
