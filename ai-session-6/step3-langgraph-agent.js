@@ -1,10 +1,29 @@
-import { StateGraph, MessagesAnnotation, END, START } from "@langchain/langgraph";
+import {
+    StateGraph,
+    Annotation,
+    messagesStateReducer,
+    END,
+    START,
+} from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { ChatGroq } from "@langchain/groq";
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import * as dotenv from "dotenv";
 dotenv.config();
+
+const MAX_TOOL_STEPS = 5;
+
+const AgentState = Annotation.Root({
+    messages: Annotation({
+        reducer: messagesStateReducer,
+        default: () => [],
+    }),
+    toolSteps: Annotation({
+        reducer: (_left, right) => right,
+        default: () => 0,
+    }),
+});
 
 const searchKnowledgeBase = tool(
     async ({ query }) => {
@@ -49,7 +68,9 @@ const toolNode = new ToolNode(tools);
 
 function shouldContinue(state) {
     const last = state.messages.at(-1);
-    return last.tool_calls?.length > 0 ? "tools" : END;
+    if (!last.tool_calls?.length) return END;
+    if ((state.toolSteps ?? 0) >= MAX_TOOL_STEPS) return END;
+    return "tools";
 }
 
 async function callModel(state) {
@@ -63,9 +84,18 @@ async function callModel(state) {
     ]);
     return { messages: [response] };
 }
-const app = new StateGraph(MessagesAnnotation)
+
+async function runTools(state) {
+    const result = await toolNode.invoke(state);
+    return {
+        ...result,
+        toolSteps: (state.toolSteps ?? 0) + 1,
+    };
+}
+
+const app = new StateGraph(AgentState)
     .addNode("agent", callModel)
-    .addNode("tools", toolNode)
+    .addNode("tools", runTools)
     .addEdge(START, "agent")
     .addConditionalEdges("agent", shouldContinue)
     .addEdge("tools", "agent")

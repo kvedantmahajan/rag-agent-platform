@@ -1,5 +1,14 @@
-import { StateGraph, MessagesAnnotation, END, START, interrupt, Command, INTERRUPT } from "@langchain/langgraph";
-import { MemorySaver } from "@langchain/langgraph";
+import {
+    StateGraph,
+    Annotation,
+    messagesStateReducer,
+    END,
+    START,
+    interrupt,
+    Command,
+    INTERRUPT,
+    MemorySaver,
+} from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { ChatGroq } from "@langchain/groq";
 import { tool } from "@langchain/core/tools";
@@ -7,6 +16,20 @@ import { z } from "zod";
 import * as readline from "readline/promises";
 import * as dotenv from "dotenv";
 dotenv.config();
+
+const MAX_TOOL_STEPS = 5;
+
+const AgentState = Annotation.Root({
+    messages: Annotation({
+        reducer: messagesStateReducer,
+        default: () => [],
+    }),
+    toolSteps: Annotation({
+        reducer: (_left, right) => right,
+        default: () => 0,
+    }),
+});
+
 // Read-only tool -- no approval needed
 const getOrderStatus = tool(
     async ({ orderId }) => {
@@ -35,6 +58,7 @@ const processRefund = tool(
     }
 );
 const tools = [getOrderStatus, processRefund];
+const toolNode = new ToolNode(tools);
 
 const model = new ChatGroq({ model: "openai/gpt-oss-20b", temperature: 0 })
     .bindTools(tools);
@@ -69,8 +93,12 @@ async function humanApproval(state) {
 
 function shouldContinue(state) {
     const last = state.messages.at(-1);
-    return last.tool_calls?.length > 0 ? "approval" : END;
+    if (!last.tool_calls?.length) return END;
+    if ((state.toolSteps ?? 0) >= MAX_TOOL_STEPS) return END;
+    if (last.tool_calls.some((tc) => tc.name === "processRefund")) return "approval";
+    return "tools";
 }
+
 async function callModel(state) {
     const r = await model.invoke([
         {
@@ -84,13 +112,21 @@ async function callModel(state) {
     return { messages: [r] };
 }
 
+async function runTools(state) {
+    const result = await toolNode.invoke(state);
+    return {
+        ...result,
+        toolSteps: (state.toolSteps ?? 0) + 1,
+    };
+}
+
 // MemorySaver stores state in memory (single process).
 // Production: replace with PostgresSaver.
 const checkpointer = new MemorySaver();
-const app = new StateGraph(MessagesAnnotation)
+const app = new StateGraph(AgentState)
     .addNode("agent", callModel)
     .addNode("approval", humanApproval)
-    .addNode("tools", new ToolNode(tools))
+    .addNode("tools", runTools)
     .addEdge(START, "agent")
     .addConditionalEdges("agent", shouldContinue)
     .addEdge("approval", "tools")
