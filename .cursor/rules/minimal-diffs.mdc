@@ -1,0 +1,31 @@
+---
+description: Only change what was asked — no drive-by edits
+alwaysApply: true
+---
+
+# Minimal diffs only
+
+- Change **only** what the user explicitly asked for.
+- Do **not** expand scope: no related cleanups, extra files, env updates, refactors, or “while we’re here” fixes unless asked.
+- Do **not** touch other sessions, packages, or configs unless they are named in the request.
+- Prefer the smallest edit that satisfies the request. Verify only what you changed.
+
+## Examples
+
+```text
+❌ Asked: convert tool params to Zod in step1-basic-agent.js
+   Also updated session-4/5 .env and model.ts
+
+✅ Asked: convert tool params to Zod in step1-basic-agent.js
+   Only edited step1-basic-agent.js
+```
+
+```text
+❌ Asked: fix decommissioned Groq model in session-6
+   Also rewrote env loading and added Ollama support
+
+✅ Asked: fix decommissioned Groq model in session-6
+   Replaced the model ID in the session-6 files that use it
+```
+
+If a related fix seems necessary, ask first — do not apply it unprompted.

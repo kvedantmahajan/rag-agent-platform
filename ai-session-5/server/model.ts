@@ -16,7 +16,7 @@ const defaultModels: Record<LlmProvider, string> = {
 
 const toolModels: Record<LlmProvider, string> = {
     ollama: "gpt-oss:latest",
-    groq: "llama3-groq-70b-8192-tool-use-preview",
+    groq: "llama-3.3-70b-versatile",
 };
 
 function resolveModelId(override: string | undefined, fallback: string): string {
