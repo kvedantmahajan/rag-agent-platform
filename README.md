@@ -28,7 +28,6 @@ NestJS API (Render / Railway / Fly)
 
 The browser talks only to NestJS. LLM calls and vector search stay on the API — not in Next.js route handlers — so auth, retrieval policy, and model choice remain server-side.
 
-Deploy details: [docs/deployment.md](docs/deployment.md).
 
 ---
 
