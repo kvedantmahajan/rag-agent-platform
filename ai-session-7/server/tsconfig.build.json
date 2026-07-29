@@ -13,6 +13,7 @@
     "./knowledge-base.service.ts",
     "./health.controller.ts",
     "./step4-production-controller.ts",
+    "./langfuse.ts",
     "./seed-kb.ts"
   ]
 }

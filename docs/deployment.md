@@ -72,6 +72,10 @@ Blueprint: repo-root [`render.yaml`](../render.yaml) (`rootDir: ai-session-7`).
 | `FRONTEND_URL` | `https://<your-app>.vercel.app` (no trailing slash) |
 | `NODE_ENV`     | `production`                                        |
 | `PORT`         | **Do not set** — Render injects it                  |
+| `LANGFUSE_PUBLIC_KEY` | Optional — enables Langfuse traces for `/rag/query` |
+| `LANGFUSE_SECRET_KEY` | Optional — pair with public key                     |
+| `LANGFUSE_BASE_URL`   | Optional — default `https://cloud.langfuse.com`     |
+| `LANGFUSE_TRACING_ENVIRONMENT` | Optional — e.g. `production` / `development` |
 
 Cold start on free tier can take ~30s (embedder load in `onModuleInit`). Health check waits until modules init.
 

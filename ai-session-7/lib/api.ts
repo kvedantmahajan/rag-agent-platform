@@ -20,6 +20,6 @@ export async function agentChat(message: string) {
   });
 }
 
-export async function healthCheck() {
-  return fetch(`${API_BASE}/health`);
+export async function healthCheck(init?: RequestInit) {
+  return fetch(`${API_BASE}/health`, init);
 }

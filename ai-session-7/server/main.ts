@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import * as dotenv from "dotenv";
 import { AppModule } from "./app.module.js";
+import { initLangfuseFromEnv, shutdownLangfuse } from "./langfuse.js";
 
 dotenv.config();
 dotenv.config({ path: ".env.local", override: true });
@@ -13,6 +14,8 @@ async function bootstrap() {
         console.error(`Missing required env vars: ${missing.join(", ")}`);
         process.exit(1);
     }
+
+    initLangfuseFromEnv();
 
     const app = await NestFactory.create(AppModule);
 
@@ -28,11 +31,17 @@ async function bootstrap() {
         credentials: false,
     });
 
-    // Render sets PORT automatically — never hardcode
-    // Local default 3001 matches lib/api.ts NEXT_PUBLIC_API_URL fallback
     const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
     await app.listen(port);
     console.log(`NestJS running on port ${port}`);
+
+    const stop = async () => {
+        await shutdownLangfuse();
+        await app.close();
+        process.exit(0);
+    };
+    process.once("SIGINT", () => void stop());
+    process.once("SIGTERM", () => void stop());
 }
 
 bootstrap();

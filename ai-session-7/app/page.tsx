@@ -1,3 +1,4 @@
+import { ApiWarmupBanner } from "@/app/components/api-warmup-banner";
 import { RagChat } from "@/app/components/rag-chat";
 
 export default function Home() {
@@ -82,6 +83,7 @@ export default function Home() {
           Pick an example or type your own. Answers stream over SSE and surface
           cited sources when retrieval clears the confidence gate.
         </p>
+        <ApiWarmupBanner />
         <RagChat />
       </section>
 
@@ -181,11 +183,11 @@ export default function Home() {
             </span>
           </li>
           <li>
-            <strong>Golden dataset + LLM-as-judge</strong>
+            <strong>Golden dataset + LLM-as-judge + Langfuse</strong>
             <span>
               Fixed questions with expected retrieve / refuse behavior; automated
-              faithfulness, relevancy, and context-precision checks (judge model)
-              so quality regressions are measurable.
+              faithfulness, relevancy, and context-precision checks; optional
+              Langfuse traces (retrieval → classify → generation) when keys are set.
             </span>
           </li>
           <li>
@@ -220,8 +222,8 @@ export default function Home() {
             <span>Tool-calling agents with human approval</span>
           </li>
           <li>
-            <strong>Golden set · LLM-as-judge evals</strong>
-            <span>Faithfulness · relevancy · context precision</span>
+            <strong>Golden set · LLM-as-judge · Langfuse</strong>
+            <span>Evals + optional production tracing</span>
           </li>
         </ul>
       </section>
@@ -289,8 +291,8 @@ export default function Home() {
           <li>
             <strong>Render</strong>
             <span>
-              NestJS web service · <code>/health</code> · TypeScript build ·{" "}
-              <code>node dist/main.js</code>
+              NestJS web service · <code>/health</code> · free tier sleeps when
+              idle (page warms API on load; first wake ~30–60s)
             </span>
           </li>
           <li>
@@ -304,10 +306,18 @@ export default function Home() {
             </span>
           </li>
           <li>
+            <strong>Langfuse · optional</strong>
+            <span>
+              Env-gated traces for retrieval, classify, and generation on{" "}
+              <code>/rag/query</code> — off unless keys are set
+            </span>
+          </li>
+          <li>
             <strong>Secrets</strong>
             <span>
               <code>GROQ_API_KEY</code>, <code>DATABASE_URL</code>,{" "}
-              <code>FRONTEND_URL</code> for CORS — host dashboards only
+              <code>FRONTEND_URL</code>, optional <code>LANGFUSE_*</code> — host
+              dashboards only
             </span>
           </li>
         </ul>
