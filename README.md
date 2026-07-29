@@ -4,8 +4,6 @@ Grounded document Q&A with **cited sources**, confidence-gated retrieval, stream
 
 | | |
 |---|---|
-| **Repo** | [github.com/kvedantmahajan/rag-agent-platform](https://github.com/kvedantmahajan/rag-agent-platform) |
-| **Live** | _Add production URL after deploy_ |
 | **Stack** | NestJS · Next.js · PostgreSQL / pgvector · Groq · Vercel AI SDK · LangGraph |
 
 ---
@@ -30,7 +28,6 @@ NestJS API (Render / Railway / Fly)
 
 The browser talks only to NestJS. LLM calls and vector search stay on the API — not in Next.js route handlers — so auth, retrieval policy, and model choice remain server-side.
 
-Deploy details: [docs/deployment.md](docs/deployment.md).
 
 ---
 
