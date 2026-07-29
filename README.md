@@ -5,7 +5,6 @@ Grounded document Q&A with **cited sources**, confidence-gated retrieval, stream
 | | |
 |---|---|
 | **Repo** | [github.com/kvedantmahajan/rag-agent-platform](https://github.com/kvedantmahajan/rag-agent-platform) |
-| **Live** | _Add production URL after deploy_ |
 | **Stack** | NestJS · Next.js · PostgreSQL / pgvector · Groq · Vercel AI SDK · LangGraph |
 
 ---
