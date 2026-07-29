@@ -7,7 +7,9 @@
     "dev:api": "tsx --tsconfig server/tsconfig.json server/main.ts",
     "start:api": "tsx --tsconfig server/tsconfig.json server/main.ts",
     "stop:api": "lsof -ti:3000 | xargs kill 2>/dev/null && echo 'Stopped API on :3000' || echo 'No API on :3000'",
-    "step1": "node step1-cached-rag.js"
+    "step1": "node server/step1-cached-rag.js",
+    "seed:kb": "tsx --tsconfig server/tsconfig.json server/seed-kb.ts",
+    "eval": "node server/eval-harness.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
@@ -26,6 +28,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^22.15.0",
     "@types/pg": "^8.15.0",
+    "jest": "^30.4.2",
     "tsx": "^4.23.1",
     "typescript": "^5.8.0"
   }

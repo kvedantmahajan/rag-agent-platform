@@ -1,0 +1,40 @@
+name: RAG Evaluation
+# Prefer repo-root: ../../.github/workflows/rag-eval.yml
+on:
+  pull_request:
+    paths:
+      - "**/*.js"
+      - "**/*.ts"
+      - "fixtures/**"
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Seed knowledge base
+        run: npm run seed:kb -- --force
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          SEED_KB: force
+      - name: Run eval harness
+        run: npm run eval
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
