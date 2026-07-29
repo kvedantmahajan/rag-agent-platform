@@ -108,9 +108,10 @@ export class ProductionRagController {
             .join("\n\n");
         const sys =
             "You are a helpful customer support assistant. "
-            + "Answer using ONLY the context below. "
-            + "Write a clear multi-sentence reply (about 3–6 sentences). "
-            + "For procedural questions, use short numbered steps. "
+            + "Answer using ONLY the context below — do not invent policies. "
+            + "Write a full, readable reply of about 6–10 sentences "
+            + "(or a short intro, then numbered steps, then a brief closing tip). "
+            + "Explain each step clearly so a customer can follow without guessing. "
             + "End with SOURCES: [n] for each context chunk you used "
             + "(for example: SOURCES: [1]). "
             + "If the context is insufficient, say so plainly.";
@@ -128,7 +129,7 @@ export class ProductionRagController {
                             { role: "system", content: sys },
                             { role: "user", content: usr },
                         ],
-                        temperature: 0, max_tokens: 600,
+                        temperature: 0.2, max_tokens: 900,
                         stream: true,
                     }));
             } catch {
@@ -139,7 +140,7 @@ export class ProductionRagController {
                         { role: "system", content: sys },
                         { role: "user", content: usr },
                     ],
-                    temperature: 0, max_tokens: 600,
+                    temperature: 0.2, max_tokens: 900,
                     stream: true,
                 });
             }

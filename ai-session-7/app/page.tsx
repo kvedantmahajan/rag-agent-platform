@@ -13,6 +13,7 @@ export default function Home() {
           <a href="#use-cases">Use cases</a>
           <a href="#built">What I built</a>
           <a href="#how">How I built it</a>
+          <a href="#impact">Why it matters</a>
           <a href="#deploy">How I deployed</a>
         </div>
       </nav>
@@ -96,8 +97,8 @@ export default function Home() {
           <li>
             <strong>NestJS RAG API</strong>
             <span>
-              Semantic chunking, MMR, pgvector confidence-gating, streaming SSE,
-              prompt caching, and model routing
+              Confidence-gating, classification, model routing, prompt caching,
+              retry/fallback, and SSE with abort/timeouts
             </span>
           </li>
           <li>
@@ -115,10 +116,10 @@ export default function Home() {
             </span>
           </li>
           <li>
-            <strong>Agents &amp; RAGAS CI gates</strong>
+            <strong>Evals &amp; agents</strong>
             <span>
-              LangGraph human-in-the-loop interrupts; faithfulness, relevancy,
-              and context precision evals
+              Golden dataset, LLM-as-judge (faithfulness / relevancy / context
+              precision), LangGraph human-in-the-loop
             </span>
           </li>
         </ul>
@@ -126,11 +127,11 @@ export default function Home() {
 
       <section className="content-section" id="how">
         <div className="section-label">How I built it</div>
-        <h2>Architecture &amp; tech stack</h2>
+        <h2>Architecture &amp; production fixes</h2>
         <p>
-          Applied AI and GenAI patterns I used on this project — Retrieval-Augmented
-          Generation, prompt engineering, human-in-the-loop ML, and a TypeScript
-          backend stack.
+          Beyond “call an LLM”: retrieval controls, cost-aware routing, resilient
+          streaming, and automated evals — the same failure modes that show up
+          when a demo becomes production traffic.
         </p>
 
         <h3 className="subhead">Architecture decisions</h3>
@@ -150,31 +151,48 @@ export default function Home() {
             </span>
           </li>
           <li>
-            <strong>Semantic chunking &amp; MMR</strong>
+            <strong>Query classification + model routing</strong>
             <span>
-              Chunk and diversify retrieved context so the model sees relevant,
-              non-redundant passages before generation.
+              Classify SIMPLE / CLASSIFICATION / SYNTHESIS / REASONING, then route
+              to a fast vs capable model — paying the right price per task.
             </span>
           </li>
           <li>
-            <strong>Model routing + prompt caching</strong>
+            <strong>Prompt caching</strong>
             <span>
-              Route simple vs synthesis queries to the right LLM tier; cache
-              stable prompt prefixes where the provider supports it.
+              Cache stable system / context prefixes so unchanged prompt tokens
+              are not fully re-billed on every request.
             </span>
           </li>
           <li>
-            <strong>Streaming SSE</strong>
+            <strong>Retry + fallback</strong>
             <span>
-              Token streaming from Nest to the browser for realtime chat, not a
-              single blocking JSON response.
+              Exponential backoff with jitter on 429/5xx, then fall back to a
+              smaller model so a single provider blip does not take down the
+              feature.
             </span>
           </li>
           <li>
-            <strong>Human-in-the-loop + RAGAS gates</strong>
+            <strong>Production streaming</strong>
             <span>
-              LangGraph interrupt / resume before irreversible tools; CI-oriented
-              faithfulness, relevancy, and context precision checks.
+              SSE with connection management: client disconnect aborts generation,
+              request timeouts via <code>AbortController</code>, and no hanging
+              writes after the socket closes.
+            </span>
+          </li>
+          <li>
+            <strong>Golden dataset + LLM-as-judge</strong>
+            <span>
+              Fixed questions with expected retrieve / refuse behavior; automated
+              faithfulness, relevancy, and context-precision checks (judge model)
+              so quality regressions are measurable.
+            </span>
+          </li>
+          <li>
+            <strong>Human-in-the-loop agents</strong>
+            <span>
+              LangGraph interrupt / resume before irreversible tools — agents with
+              a control plane, not autopilot.
             </span>
           </li>
         </ol>
@@ -191,7 +209,7 @@ export default function Home() {
           </li>
           <li>
             <strong>LLMs · Groq · Prompt engineering</strong>
-            <span>Model routing, streaming generation, retries</span>
+            <span>Classification, routing, caching, streaming, retries</span>
           </li>
           <li>
             <strong>Next.js · React</strong>
@@ -202,8 +220,53 @@ export default function Home() {
             <span>Tool-calling agents with human approval</span>
           </li>
           <li>
-            <strong>RAGAS-style evals</strong>
+            <strong>Golden set · LLM-as-judge evals</strong>
             <span>Faithfulness · relevancy · context precision</span>
+          </li>
+        </ul>
+      </section>
+
+      <section className="content-section" id="impact">
+        <div className="section-label">Why it matters</div>
+        <h2>What breaks when demos meet production</h2>
+        <p>
+          These are the failure modes I designed the stack around — the difference
+          between a local prototype and something you can put behind a real
+          product surface.
+        </p>
+        <ul className="use-case-grid">
+          <li>
+            <strong>Cost spirals</strong>
+            <span>
+              Ten local queries feel free; 10,000 production queries/day do not. A
+              2,000-token system prompt that never changes still bills those tokens
+              on every call unless you cache and route by task difficulty.
+            </span>
+          </li>
+          <li>
+            <strong>Inconsistent latency</strong>
+            <span>
+              800ms locally can become 8 seconds in production. One slow provider
+              call cascades through the feature — hence timeouts, abort-on-disconnect,
+              retries with jitter, and fallback models.
+            </span>
+          </li>
+          <li>
+            <strong>Silent quality degradation</strong>
+            <span>
+              A bug crashes your server. An AI regression returns a confident,
+              fluent, wrong answer with HTTP error rate still zero — golden
+              datasets and LLM-as-judge evals catch that class of failure.
+            </span>
+          </li>
+          <li>
+            <strong>Tool-use failures</strong>
+            <span>
+              An agent works with one model; switch providers to cut cost and the
+              new model emits malformed tool calls — silent failure on a large
+              slice of traffic without schema validation and HITL on irreversible
+              actions.
+            </span>
           </li>
         </ul>
       </section>
@@ -248,6 +311,30 @@ export default function Home() {
             </span>
           </li>
         </ul>
+
+        <a
+          className="repo-embed"
+          href="https://github.com/kvedantmahajan/rag-agent-platform"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="repo-embed-og"
+            src="https://opengraph.githubassets.com/1/kvedantmahajan/rag-agent-platform"
+            alt="GitHub repository preview for rag-agent-platform"
+            width={1200}
+            height={600}
+          />
+          <span className="repo-embed-meta">
+            <span className="repo-embed-label">Source on GitHub</span>
+            <strong>kvedantmahajan/rag-agent-platform</strong>
+            <span>
+              NestJS RAG API · Next.js UI · pgvector · evals — open the repo for
+              implementation details
+            </span>
+          </span>
+        </a>
       </section>
 
       <footer className="site-footer">

@@ -6,7 +6,7 @@ Grounded docs Q&A with **cited sources**: NestJS RAG (semantic chunking, MMR, pg
 | ---------------- | ---------------------------------------------------------------------------------------------------- |
 | **Repo**         | [github.com/kvedantmahajan/rag-agent-platform](https://github.com/kvedantmahajan/rag-agent-platform) |
 | **API (Render)** | `https://rag-agent-platform.onrender.com`                                                            |
-| **UI (Vercel)**  | _Add after Vercel deploy_                                                                            |
+| **UI (Vercel)**  | [rag-agent-platform.vercel.app](https://rag-agent-platform.vercel.app)                               |
 | **Stack**        | NestJS · Next.js · PostgreSQL / pgvector · Groq · LangGraph · RAGAS-style evals                      |
 
 **Note:** Render free tier sleeps after idle time. The first request after sleep can take ~30 seconds while the embedding model loads.

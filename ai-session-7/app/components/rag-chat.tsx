@@ -23,21 +23,88 @@ const EXAMPLE_QUESTIONS = [
   "How do I set up two-factor authentication?",
 ];
 
+/** Reveal buffered text on a cadence so fast SSE is still visible. */
+function createReveal(
+  onFrame: (shown: string) => void,
+  charsPerTick = 3,
+  intervalMs = 18,
+) {
+  let pending = "";
+  let shown = "";
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let closed = false;
+  let resolveDone: (() => void) | null = null;
+
+  const schedule = () => {
+    if (timer != null || closed) return;
+    timer = setTimeout(tick, intervalMs);
+  };
+
+  const tick = () => {
+    timer = null;
+    if (shown.length < pending.length) {
+      shown = pending.slice(
+        0,
+        Math.min(pending.length, shown.length + charsPerTick),
+      );
+      onFrame(shown);
+      schedule();
+      return;
+    }
+    if (resolveDone) {
+      const done = resolveDone;
+      resolveDone = null;
+      done();
+    }
+  };
+
+  return {
+    push(chunk: string) {
+      if (!chunk) return;
+      pending += chunk;
+      schedule();
+    },
+    /** Wait until UI has caught up to all pushed text. */
+    flush(): Promise<void> {
+      if (shown.length >= pending.length) return Promise.resolve();
+      return new Promise((resolve) => {
+        resolveDone = resolve;
+        schedule();
+      });
+    },
+    cancel() {
+      closed = true;
+      if (timer != null) clearTimeout(timer);
+      timer = null;
+      if (resolveDone) {
+        resolveDone();
+        resolveDone = null;
+      }
+    },
+  };
+}
+
 export function RagChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const revealRef = useRef<ReturnType<typeof createReveal> | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, busy]);
 
+  useEffect(() => {
+    return () => revealRef.current?.cancel();
+  }, []);
+
   async function ask(question: string) {
     const q = question.trim();
     if (!q || busy) return;
 
+    revealRef.current?.cancel();
     setInput("");
     setError(null);
     setBusy(true);
@@ -54,6 +121,17 @@ export function RagChat() {
       { id: assistantId, role: "assistant", text: "", streaming: true },
     ]);
 
+    const reveal = createReveal((shown) => {
+      setMessages((m) =>
+        m.map((msg) =>
+          msg.id === assistantId
+            ? { ...msg, text: shown, streaming: true }
+            : msg,
+        ),
+      );
+    });
+    revealRef.current = reveal;
+
     try {
       const res = await ragQuery(q);
       const contentType = res.headers.get("content-type") ?? "";
@@ -68,12 +146,15 @@ export function RagChat() {
           answer?: string;
           sources?: Source[];
         };
+        const answer = data.answer ?? "No answer.";
+        reveal.push(answer);
+        await reveal.flush();
         setMessages((m) =>
           m.map((msg) =>
             msg.id === assistantId
               ? {
                   ...msg,
-                  text: data.answer ?? "No answer.",
+                  text: answer,
                   sources: data.sources ?? [],
                   streaming: false,
                 }
@@ -115,14 +196,7 @@ export function RagChat() {
           if (payload.error) throw new Error(payload.error);
           if (payload.token) {
             fullText += payload.token;
-            const snapshot = fullText;
-            setMessages((m) =>
-              m.map((msg) =>
-                msg.id === assistantId
-                  ? { ...msg, text: snapshot, streaming: true }
-                  : msg,
-              ),
-            );
+            reveal.push(payload.token);
           }
           if (payload.done) {
             sources = payload.sources ?? [];
@@ -133,6 +207,7 @@ export function RagChat() {
         }
       }
 
+      await reveal.flush();
       setMessages((m) =>
         m.map((msg) =>
           msg.id === assistantId
@@ -147,6 +222,7 @@ export function RagChat() {
         ),
       );
     } catch (err) {
+      reveal.cancel();
       const message =
         err instanceof Error ? err.message : "Request failed";
       setError(message);
@@ -162,6 +238,7 @@ export function RagChat() {
         ),
       );
     } finally {
+      revealRef.current = null;
       setBusy(false);
     }
   }
