@@ -1,6 +1,6 @@
-# Deployment guide (internal)
+# Deployment guide
 
-Target stack for `rag-agent-platform` production demos and resume live URLs.
+Hosting layout for the knowledge-base Q&A platform live URLs.
 
 ```text
 Browser (Next.js on Vercel — ai-session-7/app)
@@ -115,4 +115,4 @@ Cold start on free tier can take ~30s (embedder load in `onModuleInit`). Health 
 
 - Anthropic prompt caching as a prod dependency
 - AWS GPU / self-hosted Ollama
-- Session 6 HITL UI on Vercel (follow-up)
+- Session 6 human-in-the-loop UI on Vercel (follow-up)

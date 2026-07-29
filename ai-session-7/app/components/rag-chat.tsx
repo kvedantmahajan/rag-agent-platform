@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ragQuery } from "@/lib/api";
 
 type Source = { title: string };
@@ -11,6 +11,7 @@ type Message = {
   text: string;
   sources?: Source[];
   meta?: string;
+  streaming?: boolean;
 };
 
 const EXAMPLE_QUESTIONS = [
@@ -27,6 +28,11 @@ export function RagChat() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, busy]);
 
   async function ask(question: string) {
     const q = question.trim();
@@ -45,7 +51,7 @@ export function RagChat() {
     setMessages((m) => [
       ...m,
       userMsg,
-      { id: assistantId, role: "assistant", text: "" },
+      { id: assistantId, role: "assistant", text: "", streaming: true },
     ]);
 
     try {
@@ -57,7 +63,6 @@ export function RagChat() {
         throw new Error(body || `HTTP ${res.status}`);
       }
 
-      // Confidence miss returns plain JSON (not SSE)
       if (contentType.includes("application/json")) {
         const data = (await res.json()) as {
           answer?: string;
@@ -70,6 +75,7 @@ export function RagChat() {
                   ...msg,
                   text: data.answer ?? "No answer.",
                   sources: data.sources ?? [],
+                  streaming: false,
                 }
               : msg,
           ),
@@ -112,7 +118,9 @@ export function RagChat() {
             const snapshot = fullText;
             setMessages((m) =>
               m.map((msg) =>
-                msg.id === assistantId ? { ...msg, text: snapshot } : msg,
+                msg.id === assistantId
+                  ? { ...msg, text: snapshot, streaming: true }
+                  : msg,
               ),
             );
           }
@@ -128,7 +136,13 @@ export function RagChat() {
       setMessages((m) =>
         m.map((msg) =>
           msg.id === assistantId
-            ? { ...msg, text: fullText || msg.text, sources, meta }
+            ? {
+                ...msg,
+                text: fullText || msg.text,
+                sources,
+                meta,
+                streaming: false,
+              }
             : msg,
         ),
       );
@@ -141,7 +155,8 @@ export function RagChat() {
           msg.id === assistantId
             ? {
                 ...msg,
-                text: msg.text || "Something went wrong.",
+                text: msg.text || "Something went wrong. Please try again.",
+                streaming: false,
               }
             : msg,
         ),
@@ -157,93 +172,77 @@ export function RagChat() {
   }
 
   return (
-    <>
-      <h1>Knowledge-base Q&amp;A</h1>
-      <p style={{ color: "#555", fontSize: 14 }}>
-        Ask a support question grounded in our demo knowledge base. Click an
-        example to see streaming retrieval + generation:
-      </p>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          marginBottom: 16,
-        }}
-      >
+    <div className="chat-shell">
+      <div className="chat-toolbar">
+        <span className="live-pill">
+          {busy ? "Streaming answer" : "Live · grounded retrieval"}
+        </span>
+        <span>Sources cited when matched</span>
+      </div>
+
+      <div className="examples">
         {EXAMPLE_QUESTIONS.map((q) => (
           <button
             key={q}
             type="button"
+            className="example-chip"
             disabled={busy}
             onClick={() => void ask(q)}
-            style={{
-              padding: "6px 10px",
-              fontSize: 13,
-              borderRadius: 6,
-              border: "1px solid #cbd5e1",
-              background: "#fff",
-              cursor: busy ? "not-allowed" : "pointer",
-              textAlign: "left",
-            }}
           >
             {q}
           </button>
         ))}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="messages" aria-live="polite">
+        {messages.length === 0 && (
+          <p className="empty-state">
+            Start with an example above — you will see tokens stream in as the
+            model answers from retrieved articles.
+          </p>
+        )}
         {messages.map((message) => (
           <div
             key={message.id}
-            style={{
-              padding: 12,
-              borderRadius: 8,
-              background: message.role === "user" ? "#eef2ff" : "#f5f5f5",
-            }}
+            className={`msg ${
+              message.role === "user" ? "msg-user" : "msg-assistant"
+            }${message.streaming ? " msg-streaming" : ""}`}
           >
-            <strong>
-              {message.role === "user" ? "You" : "Assistant"}:{" "}
-            </strong>
-            <span style={{ whiteSpace: "pre-wrap" }}>{message.text}</span>
+            <span className="msg-role">
+              {message.role === "user" ? "You" : "Fathom"}
+            </span>
+            <span className="msg-text">{message.text}</span>
             {message.sources && message.sources.length > 0 && (
-              <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 13 }}>
+              <ul className="sources">
                 {message.sources.map((s, i) => (
                   <li key={`${s.title}-${i}`}>{s.title}</li>
                 ))}
               </ul>
             )}
-            {message.meta && (
-              <p style={{ margin: "6px 0 0", fontSize: 12, color: "#64748b" }}>
-                {message.meta}
-              </p>
-            )}
+            {message.meta && <p className="msg-meta">{message.meta}</p>}
           </div>
         ))}
+        <div ref={bottomRef} />
       </div>
 
       {error && (
-        <p style={{ color: "crimson" }}>
-          {error}. Is Nest running and is{" "}
-          <code>NEXT_PUBLIC_API_URL</code> correct?
+        <p className="chat-error">
+          {error}. Check that the API is reachable and try again.
         </p>
       )}
 
-      <form
-        onSubmit={onSubmit}
-        style={{ marginTop: 16, display: "flex", gap: 8 }}
-      >
+      <form className="composer" onSubmit={onSubmit}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={busy}
-          placeholder="Ask something..."
-          style={{ flex: 1, padding: 8 }}
+          placeholder="Ask a support question…"
+          aria-label="Ask a support question"
         />
         <button type="submit" disabled={busy || !input.trim()}>
           {busy ? "…" : "Send"}
         </button>
       </form>
-    </>
+    </div>
   );
 }

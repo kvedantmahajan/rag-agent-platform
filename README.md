@@ -1,13 +1,13 @@
 # Knowledge-Base Q&A Platform
 
-Grounded document Q&A with **cited sources**, confidence-gated retrieval, streaming answers, and optional **human-in-the-loop** agents — built as a full-stack NestJS + Next.js system on PostgreSQL (`pgvector`) with Groq-hosted LLMs.
+Grounded docs Q&A with **cited sources**: NestJS RAG (semantic chunking, MMR, pgvector **confidence-gating**, streaming SSE, prompt caching, model routing), Next.js UI, plus **RAGAS** CI gates on faithfulness / relevancy / context precision — deployed on **Render**, **Neon**, and **Vercel**.
 
 |                  |                                                                                                      |
 | ---------------- | ---------------------------------------------------------------------------------------------------- |
 | **Repo**         | [github.com/kvedantmahajan/rag-agent-platform](https://github.com/kvedantmahajan/rag-agent-platform) |
-| **API (Render)** | `https://rag-agent-platform.onrender.com` — set after first deploy                                   |
+| **API (Render)** | `https://rag-agent-platform.onrender.com`                                                            |
 | **UI (Vercel)**  | _Add after Vercel deploy_                                                                            |
-| **Stack**        | NestJS · Next.js · PostgreSQL / pgvector · Groq · Vercel AI SDK · LangGraph                          |
+| **Stack**        | NestJS · Next.js · PostgreSQL / pgvector · Groq · LangGraph · RAGAS-style evals                      |
 
 **Note:** Render free tier sleeps after idle time. The first request after sleep can take ~30 seconds while the embedding model loads.
 
@@ -15,7 +15,7 @@ Grounded document Q&A with **cited sources**, confidence-gated retrieval, stream
 
 ## Why this exists
 
-Support and internal-docs Q&A fails in two common ways: the model **hallucinates** when retrieval is weak, or the UI streams fluent answers with **no audit trail**. This project focuses on production RAG patterns used in real backend systems: retrieve with a similarity gate, generate only from context, cite sources, stream to the client, and (for agents) require human approval before irreversible actions.
+Support and internal-docs Q&A fails in two common ways: the model **hallucinates** when retrieval is weak, or the UI streams fluent answers with **no audit trail**. I focused this project on production RAG with confidence-gating and citation parsing: retrieve with a similarity gate, generate only from context, cite sources, stream over SSE, and (for agents) require human approval before irreversible actions.
 
 ---
 
@@ -31,7 +31,7 @@ NestJS API (Render · ai-session-7/server)
         └──► Groq HTTPS API
 ```
 
-Both UI and API live in `ai-session-7`. The browser talks only to NestJS (`lib/api.ts` → `NEXT_PUBLIC_API_URL`). No Next.js `app/api` routes.
+Both UI and API live in `ai-session-7`. The browser talks only to NestJS (`NEXT_PUBLIC_API_URL`). No Next.js `app/api` routes.
 
 Deploy details: [docs/deployment.md](docs/deployment.md). Blueprint: [render.yaml](render.yaml).
 
@@ -46,22 +46,23 @@ Deploy details: [docs/deployment.md](docs/deployment.md). Blueprint: [render.yam
 
 ## Capabilities
 
-| Area           | What shipped                                                                               |
-| -------------- | ------------------------------------------------------------------------------------------ |
-| **Retrieval**  | Embeddings → `pgvector` similarity search, confidence thresholding, chunking / MMR options |
-| **Generation** | Context-only prompting, citations / `SOURCES`, streaming SSE, model routing + retry        |
-| **UI**         | Next.js chat in `ai-session-7` streaming Nest `POST /rag/query` via `lib/api.ts`           |
-| **Agents**     | LangGraph tool-calling flows with interrupt / resume (e.g. refund approval)                |
-| **Ops**        | Health checks, CORS, env fail-fast, RAGAS eval harness as CI gate                          |
+| Area           | What shipped                                                                                       |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| **Retrieval**  | Embeddings → `pgvector` similarity search, confidence-gating, semantic chunking / MMR              |
+| **Generation** | Context-only prompting, citation parsing / `SOURCES`, streaming SSE, prompt caching, model routing |
+| **UI**         | Next.js chat streaming Nest `POST /rag/query`                                                      |
+| **Agents**     | LangGraph tool-calling with human-in-the-loop interrupt / resume (e.g. refund approval)            |
+| **Ops**        | Health checks, CORS, env fail-fast, RAGAS CI gates (faithfulness / relevancy / context precision)  |
 
 ---
 
 ## Tech stack
 
-- **API:** NestJS, TypeScript, Zod (`ai-session-7/server`)
-- **Data:** PostgreSQL, pgvector, Xenova embeddings
+- **Applied AI & GenAI:** RAG, LLMs, prompt engineering, LangGraph, human-in-the-loop, vector databases, RAGAS-style evals
+- **API:** NestJS, Node.js, TypeScript, Zod (`ai-session-7/server`)
+- **Data:** PostgreSQL, pgvector, Xenova embeddings (Neon in production)
 - **LLM:** Groq (production); Ollama optional locally
-- **Frontend:** Next.js App Router (`ai-session-7/app`, `lib/api.ts`)
+- **Frontend:** Next.js, React (`ai-session-7/app`)
 - **Agents:** LangGraph.js, human-in-the-loop (`ai-session-6`)
 - **Hosting:** Render · Neon · Vercel
 
@@ -85,15 +86,15 @@ Production Next (Vercel): root `ai-session-7`, build `npm run build:web`
 
 ## Repository map
 
-| Path               | Role                                              |
-| ------------------ | ------------------------------------------------- |
-| `ai-session-7`     | **Prod unit** — Nest API (Render) + Next UI (Vercel) |
-| `ai-session-5`     | Curriculum RAG UI (earlier session; not deploy unit) |
-| `ai-session-6`     | LangGraph agents + HITL UI                        |
-| `ai-session-1`–`4` | Curriculum building blocks                        |
+| Path               | Role                                                   |
+| ------------------ | ------------------------------------------------------ |
+| `ai-session-7`     | Shipped unit — Nest API (Render) + Next UI (Vercel)    |
+| `ai-session-5`     | Earlier RAG UI (not the deploy unit)                   |
+| `ai-session-6`     | LangGraph agents + human-in-the-loop UI                |
+| `ai-session-1`–`4` | Foundational modules leading up to the production path |
 
 ---
 
 ## Author
 
-Built as applied AI engineering practice alongside production NestJS backend experience (fintech / lending systems). Resume: Knowledge-Base Q&A Platform (RAG + Evals).
+I built this as applied AI engineering practice alongside NestJS backend work in fintech / lending systems.

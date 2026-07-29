@@ -1,34 +1,33 @@
+import type { Metadata } from "next";
+import { Figtree, Syne } from "next/font/google";
+import "./globals.css";
+
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+  display: "swap",
+});
+
+const figtree = Figtree({
+  subsets: ["latin"],
+  variable: "--font-figtree",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "Knowledge-Base Q&A Platform · RAG + Evals",
+  description:
+    "Grounded docs Q&A with cited sources — NestJS RAG, pgvector confidence-gating, streaming SSE, and RAGAS evals. Deployed on Render, Neon, and Vercel.",
+};
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body
-        style={{
-          fontFamily: "system-ui, sans-serif",
-          maxWidth: 720,
-          margin: "2rem auto",
-          padding: "0 1rem",
-          lineHeight: 1.5,
-        }}
-      >
-        <header style={{ marginBottom: "1.5rem" }}>
-          <p
-            style={{
-              margin: "0 0 0.5rem",
-              fontSize: 13,
-              color: "#64748b",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-            }}
-          >
-            Session 7 — Production RAG
-          </p>
-        </header>
-        {children}
-      </body>
+    <html lang="en" className={`${syne.variable} ${figtree.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

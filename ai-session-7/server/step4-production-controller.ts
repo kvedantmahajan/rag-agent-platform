@@ -82,10 +82,10 @@ export class ProductionRagController {
             res.json({
                 answer:
                     "I do not have information about that in the knowledge base. "
-                    + "This demo covers: password reset, refunds, cancelling a "
+                    + "I can help with: password reset, refunds, cancelling a "
                     + "subscription, order tracking, updating billing "
                     + "information, and two-factor authentication (2FA). "
-                    + "Try one of those topics, or pick an example question in the UI.",
+                    + "Try one of those topics, or pick an example question above.",
                 sources: [], confident: false,
             });
             return;
