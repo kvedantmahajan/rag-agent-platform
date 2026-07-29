@@ -1,0 +1,26 @@
+[
+  {
+    "title": "How to reset your password",
+    "content": "To reset your password, click Forgot Password on the login page. Enter your email and we will send a reset link. The link expires after 24 hours."
+  },
+  {
+    "title": "Requesting a refund",
+    "content": "Refunds are processed within 5 to 7 business days. Go to Order History, select the order, click Request Refund. Only available within 30 days of purchase."
+  },
+  {
+    "title": "Cancelling your subscription",
+    "content": "Cancel at any time from Account Settings. Access continues until end of current billing period."
+  },
+  {
+    "title": "Tracking your order",
+    "content": "You receive a tracking email within 24 hours of shipping. Click the link to see real-time delivery status."
+  },
+  {
+    "title": "Updating your billing information",
+    "content": "Go to Account Settings, select Billing, click Update Payment Method. We accept Visa, Mastercard, and UPI."
+  },
+  {
+    "title": "Two-factor authentication setup",
+    "content": "Go to Account Settings, select Security, click Enable 2FA. Scan the QR code with Google Authenticator or Authy."
+  }
+]

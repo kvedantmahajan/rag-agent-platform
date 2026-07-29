@@ -1,0 +1,17 @@
+{
+  "editor.formatOnSave": true,
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "files.associations": {
+    "**/.github/workflows/*.{yml,yaml}": "yaml",
+    "render.yaml": "yaml",
+    "**/*.yaml": "yaml",
+    "**/*.yml": "yaml"
+  }
+}

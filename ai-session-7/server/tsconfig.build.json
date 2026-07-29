@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "../dist",
+    "rootDir": ".",
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": [
+    "./main.ts",
+    "./app.module.ts",
+    "./knowledge-base.service.ts",
+    "./health.controller.ts",
+    "./step4-production-controller.ts",
+    "./seed-kb.ts"
+  ]
+}
