@@ -6,10 +6,13 @@
   "scripts": {
     "dev:api": "tsx --tsconfig server/tsconfig.json server/main.ts",
     "start:api": "tsx --tsconfig server/tsconfig.json server/main.ts",
+    "build": "tsc -p server/tsconfig.build.json",
+    "start": "node dist/main.js",
     "stop:api": "lsof -ti:3000 | xargs kill 2>/dev/null && echo 'Stopped API on :3000' || echo 'No API on :3000'",
     "step1": "node server/step1-cached-rag.js",
     "seed:kb": "tsx --tsconfig server/tsconfig.json server/seed-kb.ts",
-    "eval": "node server/eval-harness.js"
+    "eval": "node server/eval-harness.js",
+    "postinstall": "node -e \"import('@xenova/transformers').then(()=>console.log('transformers ok')).catch((e)=>{console.warn(e); process.exit(0)})\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

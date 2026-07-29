@@ -9,6 +9,9 @@
     "editor.formatOnSave": true
   },
   "files.associations": {
-    "**/.github/workflows/*.{yml,yaml}": "yaml"
+    "**/.github/workflows/*.{yml,yaml}": "yaml",
+    "render.yaml": "yaml",
+    "**/*.yaml": "yaml",
+    "**/*.yml": "yaml"
   }
 }

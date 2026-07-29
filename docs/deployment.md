@@ -3,176 +3,115 @@
 Target stack for `rag-agent-platform` production demos and resume live URLs.
 
 ```text
-Browser (Next.js on Vercel)
+Browser (Next.js on Vercel — ai-session-5)
         │
         ▼
-NestJS API (Render / Railway / Fly)
+NestJS API (Render — ai-session-7)
         │
-        ├──► Postgres + pgvector (Neon / Supabase)
+        ├──► Postgres + pgvector (Neon, pooled URL)
         └──► Groq HTTPS API  (managed model)
 ```
 
-This path **does not** require Anthropic, AWS GPUs, Ollama in the cloud, or Session 7 prompt caching.
+This path **does not** require Anthropic, AWS GPUs, or Ollama in the cloud.
 
 ---
 
 ## 1. What to deploy
 
-The monorepo is session-based. Deploy **applications**, not every CLI exercise.
+| App | Source | Host |
+|-----|--------|------|
+| **Production Nest API** | `ai-session-7` | Render (`render.yaml`) |
+| **RAG UI** | `ai-session-5` (Next.js only) | Vercel |
 
-| App                                            | Source         | Public surface                |
-| ---------------------------------------------- | -------------- | ----------------------------- |
-| **RAG + streaming UI** (primary)               | `ai-session-5` | Next.js pages → Nest `/rag/*` |
-| **Agents + HITL UI** (optional second service) | `ai-session-6` | Next.js → Nest `/agent/*`     |
+Primary API routes on Render:
 
-Sessions 1–4 remain local learning steps. Session 7 caching demos stay optional/local.
+| Route | Purpose |
+|-------|---------|
+| `GET /health` | Render health check (after embedder warm) |
+| `POST /rag/query` | Production RAG (routing, retry, SSE) |
 
-**Suggested first ship:** Session 5 only. Add Session 6 when the HITL agent should be publicly demoable.
-
----
-
-## 2. Component choices
-
-| Layer    | Recommended               | Alternatives | Notes                                                                    |
-| -------- | ------------------------- | ------------ | ------------------------------------------------------------------------ |
-| Frontend | **Vercel**                | Netlify      | Set `NEXT_PUBLIC_API_URL` to the Nest public URL                         |
-| API      | **Render** or **Railway** | Fly.io       | Long-lived Node process; enable CORS for the Vercel origin               |
-| Database | **Neon**                  | Supabase     | Enable `vector` extension; use connection pooler URL carefully with Nest |
-| LLM      | **Groq**                  | —            | `GROQ_API_KEY` only; no GPU infra                                        |
-
-Pick one option per row and stick to it for a given environment (`staging` / `prod`).
+Session 5 UI pages that call `/rag/chat*` expect the Session 5 Nest shape. For the Session 7 ship, smoke the API with `/health` and `/rag/query`; point `NEXT_PUBLIC_API_URL` at Render when aligning UI routes, or keep Session 5 Nest for those chat pages locally.
 
 ---
 
-## 3. Database (Neon or Supabase)
+## 2. Neon
 
-1. Create a Postgres project.
-2. Enable pgvector:
-
-   ```sql
-   CREATE EXTENSION IF NOT EXISTS vector;
-   ```
-
-3. Seed `kb_articles` from Session 7 fixture JSON (Nest boot does this
-   automatically if the table is empty):
+1. Create project (e.g. Singapore / `ap-southeast-1`).
+2. Enable extension: `CREATE EXTENSION IF NOT EXISTS vector;`
+3. Copy **pooled** connection string (`…-pooler.…`, `sslmode=require`) for Render.
+4. Seed (once), using **direct** URL locally if preferred:
 
    ```bash
    cd ai-session-7
-   npm run seed:kb              # Nest CLI context; skip if rows exist
-   npm run seed:kb -- --force   # clear + reload fixtures/kb-articles.json
+   DATABASE_URL='postgresql://…@ep-….neon.tech/neondb?sslmode=require' \
+     npm run seed:kb -- --force
    ```
 
-4. Copy the connection string into the API host as `DATABASE_URL`.
+5. Verify: `SELECT COUNT(*) FROM kb_articles;` → **6**
 
-**Pooling:** Neon’s pooled endpoint is fine for many serverless clients. Nest on Render/Railway is a long-lived process — prefer the **direct** or documented Nest-friendly URL if you see flaky connects; follow Neon’s Nest/pg guidance for your plan.
-
-**Embeddings / seed:** On API startup, `KnowledgeBaseService` loads the embedder and seeds from `fixtures/kb-articles.json` if `kb_articles` is empty. Use `SEED_KB=force` or `npm run seed:kb -- --force` to reload.
+**Never commit** Neon passwords. Rotate if a URL was pasted into chat/logs.
 
 ---
 
-## 4. NestJS API (Render / Railway / Fly)
+## 3. Render (Nest — `ai-session-7`)
 
-### Build & start (Session 5 example)
+Blueprint: repo-root [`render.yaml`](../render.yaml) (`rootDir: ai-session-7`).
 
-From `ai-session-5`:
+| Setting | Value |
+|---------|--------|
+| Build | `npm install && npm run build` |
+| Start | `npm run start` → `node dist/main.js` |
+| Health | `/health` |
 
-| Setting        | Value                                                                             |
-| -------------- | --------------------------------------------------------------------------------- |
-| Root directory | `ai-session-5`                                                                    |
-| Install        | `npm install`                                                                     |
-| Start          | `npm run start:api` (or `npx tsx --tsconfig server/tsconfig.json server/main.ts`) |
-| Health         | `GET /` may 404 — use a known route or add a `/health` later                      |
+### Env (dashboard secrets)
 
-### Required env (API)
+| Key | Value |
+|-----|--------|
+| `GROQ_API_KEY` | Groq key |
+| `DATABASE_URL` | Neon **pooled** URL |
+| `FRONTEND_URL` | `https://<your-app>.vercel.app` (no trailing slash) |
+| `NODE_ENV` | `production` |
+| `PORT` | **Do not set** — Render injects it |
 
-```bash
-GROQ_API_KEY=...
-DATABASE_URL=postgresql://...
-API_PORT=3000
-LLM_PROVIDER=groq
-LLM_MODEL=llama-3.3-70b-versatile
-LLM_MODEL_TOOLS=llama-3.3-70b-versatile
-```
-
-Do **not** set Ollama overrides in production unless the API can reach an Ollama host.
-
-### CORS
-
-Session 5/6 enable CORS for `http://localhost:3001`. For production, update `server/main.ts` (or equivalent) to allow:
-
-- `https://<your-app>.vercel.app`
-- optional custom domain
-
-Redeploy API after changing allowed origins.
-
-### Cold starts / timeouts
-
-- Prefer a **non-sleeping** plan on Render if demos must be snappy.
-- Streaming RAG responses need a host that supports long-lived HTTP; avoid forcing the Nest LLM stack through Vercel serverless functions.
+Cold start on free tier can take ~30s (embedder load in `onModuleInit`). Health check waits until modules init.
 
 ---
 
-## 5. Next.js (Vercel)
+## 4. Vercel (Next — `ai-session-5`)
 
-1. Import the GitHub repo in Vercel.
-2. Set **Root Directory** to `ai-session-5` (or `ai-session-6`).
-3. Framework preset: Next.js.
-4. Env:
-
-   ```bash
-   NEXT_PUBLIC_API_URL=https://<your-nestjs-host>
-   ```
-
-5. Deploy. Confirm the browser calls Nest (Network tab), not a missing relative `/api`.
-
-`NEXT_PUBLIC_*` is baked in at build time — redeploy the frontend if the API URL changes.
+1. Import repo; **Root Directory** = `ai-session-5`
+2. Env: `NEXT_PUBLIC_API_URL=https://rag-agent-platform.onrender.com` (your Render URL)
+3. Redeploy after changing `NEXT_PUBLIC_*`
+4. Set matching `FRONTEND_URL` on Render, then redeploy Nest
 
 ---
 
-## 6. Groq
+## 5. Local vs production
 
-1. Create a key at [console.groq.com](https://console.groq.com/).
-2. Set `GROQ_API_KEY` only on the **API** service (never in the Next.js client).
-3. Use production model IDs already referenced in sessions (e.g. `llama-3.3-70b-versatile`). Update if Groq deprecates an ID.
-
----
-
-## 7. End-to-end checklist
-
-- [ ] `vector` extension enabled; `kb_articles` populated
-- [ ] Nest reachable over HTTPS; `GROQ_API_KEY` + `DATABASE_URL` set
-- [ ] CORS allows the Vercel origin
-- [ ] `NEXT_PUBLIC_API_URL` points at Nest
-- [ ] Smoke test: Session 5 chat / RAG page returns a grounded answer
-- [ ] (Optional) Session 6: refund HITL approve/deny flow
-- [ ] README / resume live URL updated
+| Concern | Local | Production |
+|---------|--------|------------|
+| API | `npm run dev:api` / `tsx` in `ai-session-7` | Render `npm run start` |
+| DB | `rag_kb` or Neon | Neon pooled |
+| Front | `ai-session-5` `:3001` | Vercel |
+| LLM | Groq (optional Ollama) | Groq only |
 
 ---
 
-## 8. Local vs production
+## 6. Checklist
 
-| Concern | Local                             | Production                      |
-| ------- | --------------------------------- | ------------------------------- |
-| LLM     | Groq and/or Ollama (`.env.local`) | Groq only                       |
-| DB      | Local Postgres or Neon branch     | Neon/Supabase                   |
-| Front   | `localhost:3001`                  | Vercel                          |
-| API     | `localhost:3000`                  | Render/Railway/Fly              |
-| Secrets | `.env` (gitignored)               | Host dashboards / secret stores |
-
----
-
-## 9. Cost posture (default path)
-
-- **Vercel / Render / Neon free or low tiers** are enough for portfolio demos.
-- **Groq:** pay-per-token; usually cheap at demo traffic.
-- **Avoid** always-on AWS GPU for this architecture — out of scope for the chosen deploy path.
+- [ ] Neon `vector` + 6 `kb_articles` rows  
+- [ ] Render env: `GROQ_API_KEY`, pooled `DATABASE_URL`, `FRONTEND_URL`  
+- [ ] `GET /health` → 200  
+- [ ] `POST /rag/query` streams tokens  
+- [ ] Vercel `NEXT_PUBLIC_API_URL` → Render  
+- [ ] CORS: no trailing slash mismatch  
+- [ ] README Live URLs + cold-start note  
+- [ ] Rotate Neon password if it was exposed  
 
 ---
 
-## 10. Out of scope (for now)
+## 7. Out of scope
 
-- Anthropic prompt caching as a production dependency
-- Self-hosted Ollama/vLLM on AWS GPU
-- Multi-region HA, GPU autoscaling, custom CUDA stacks
-
-Document any future self-host experiment separately; do not mix it into this default pipeline without an explicit env/provider switch.
+- Anthropic prompt caching as a prod dependency  
+- AWS GPU / self-hosted Ollama  
+- Session 6 HITL UI on Vercel (follow-up)
