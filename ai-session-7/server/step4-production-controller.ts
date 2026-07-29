@@ -80,7 +80,12 @@ export class ProductionRagController {
         const searchResult = await this.kb.search(question, topK);
         if (!searchResult.hasConfidentMatch) {
             res.json({
-                answer: "I do not have information about that.",
+                answer:
+                    "I do not have information about that in the knowledge base. "
+                    + "This demo covers: password reset, refunds, cancelling a "
+                    + "subscription, order tracking, updating billing "
+                    + "information, and two-factor authentication (2FA). "
+                    + "Try one of those topics, or pick an example question in the UI.",
                 sources: [], confident: false,
             });
             return;
@@ -102,9 +107,13 @@ export class ProductionRagController {
             .map((r, i) => `[${i + 1}] ${r.title}\n${r.content}`)
             .join("\n\n");
         const sys =
-            "Answer using ONLY the context. "
-            + "SOURCES: [n] for each used. "
-            + "If insufficient, say so.";
+            "You are a helpful customer support assistant. "
+            + "Answer using ONLY the context below. "
+            + "Write a clear multi-sentence reply (about 3–6 sentences). "
+            + "For procedural questions, use short numbered steps. "
+            + "End with SOURCES: [n] for each context chunk you used "
+            + "(for example: SOURCES: [1]). "
+            + "If the context is insufficient, say so plainly.";
         const usr =
             `<context>\n${ctx}\n</context>\n`
             + `<question>${question}</question>`;
@@ -119,7 +128,7 @@ export class ProductionRagController {
                             { role: "system", content: sys },
                             { role: "user", content: usr },
                         ],
-                        temperature: 0, max_tokens: 400,
+                        temperature: 0, max_tokens: 600,
                         stream: true,
                     }));
             } catch {
@@ -130,7 +139,7 @@ export class ProductionRagController {
                         { role: "system", content: sys },
                         { role: "user", content: usr },
                     ],
-                    temperature: 0, max_tokens: 400,
+                    temperature: 0, max_tokens: 600,
                     stream: true,
                 });
             }

@@ -18,10 +18,10 @@ This path **does not** require Anthropic, AWS GPUs, or Ollama in the cloud. UI a
 
 ## 1. What to deploy
 
-| App | Source | Host |
-|-----|--------|------|
-| **Production Nest API** | `ai-session-7` (`npm run build` → `dist/`) | Render (`render.yaml`) |
-| **RAG UI** | `ai-session-7` Next app (`npm run build:web`) | Vercel |
+| App                     | Source                                        | Host                   |
+| ----------------------- | --------------------------------------------- | ---------------------- |
+| **Production Nest API** | `ai-session-7` (`npm run build` → `dist/`)    | Render (`render.yaml`) |
+| **RAG UI**              | `ai-session-7` Next app (`npm run build:web`) | Vercel                 |
 
 Path filters avoid rebuilding both on every push:
 
@@ -32,10 +32,10 @@ Shared `package.json` changes still trigger both (expected).
 
 Primary API routes on Render:
 
-| Route | Purpose |
-|-------|---------|
-| `GET /health` | Render health check (after embedder warm) |
-| `POST /rag/query` | Production RAG (routing, retry, SSE) |
+| Route             | Purpose                                   |
+| ----------------- | ----------------------------------------- |
+| `GET /health`     | Render health check (after embedder warm) |
+| `POST /rag/query` | Production RAG (routing, retry, SSE)      |
 
 First Nest boot with pooled `DATABASE_URL` runs `KnowledgeBaseService` schema + seed-from-fixtures if empty.
 
@@ -57,21 +57,21 @@ First Nest boot with pooled `DATABASE_URL` runs `KnowledgeBaseService` schema + 
 
 Blueprint: repo-root [`render.yaml`](../render.yaml) (`rootDir: ai-session-7`).
 
-| Setting | Value |
-|---------|--------|
-| Build | `npm install && npm run build` |
-| Start | `npm run start` → `node dist/main.js` |
-| Health | `/health` |
+| Setting | Value                                 |
+| ------- | ------------------------------------- |
+| Build   | `npm install && npm run build`        |
+| Start   | `npm run start` → `node dist/main.js` |
+| Health  | `/health`                             |
 
 ### Env (dashboard secrets)
 
-| Key | Value |
-|-----|--------|
-| `GROQ_API_KEY` | Groq key |
-| `DATABASE_URL` | Neon **pooled** URL |
+| Key            | Value                                               |
+| -------------- | --------------------------------------------------- |
+| `GROQ_API_KEY` | Groq key                                            |
+| `DATABASE_URL` | Neon **pooled** URL                                 |
 | `FRONTEND_URL` | `https://<your-app>.vercel.app` (no trailing slash) |
-| `NODE_ENV` | `production` |
-| `PORT` | **Do not set** — Render injects it |
+| `NODE_ENV`     | `production`                                        |
+| `PORT`         | **Do not set** — Render injects it                  |
 
 Cold start on free tier can take ~30s (embedder load in `onModuleInit`). Health check waits until modules init.
 
@@ -89,30 +89,30 @@ Cold start on free tier can take ~30s (embedder load in `onModuleInit`). Health 
 
 ## 5. Local vs production
 
-| Concern | Local | Production |
-|---------|--------|------------|
-| API | `npm run dev:api` → `:3001` | Render `npm run start` |
-| DB | `rag_kb` or Neon | Neon pooled |
-| Front | `npm run dev:web` → `:3000` | Vercel (`ai-session-7`) |
-| LLM | Groq (optional Ollama) | Groq only |
+| Concern | Local                       | Production              |
+| ------- | --------------------------- | ----------------------- |
+| API     | `npm run dev:api` → `:3001` | Render `npm run start`  |
+| DB      | `rag_kb` or Neon            | Neon pooled             |
+| Front   | `npm run dev:web` → `:3000` | Vercel (`ai-session-7`) |
+| LLM     | Groq (optional Ollama)      | Groq only               |
 
 ---
 
 ## 6. Checklist
 
-- [ ] Neon `vector` + 6 `kb_articles` rows  
-- [ ] Render env: `GROQ_API_KEY`, pooled `DATABASE_URL`, `FRONTEND_URL`  
-- [ ] `GET /health` → 200  
-- [ ] `POST /rag/query` streams tokens  
-- [ ] Vercel `NEXT_PUBLIC_API_URL` → Render  
-- [ ] CORS: no trailing slash mismatch  
-- [ ] README Live URLs + cold-start note  
-- [ ] Rotate Neon password if it was exposed  
+- [ ] Neon `vector` + 6 `kb_articles` rows
+- [ ] Render env: `GROQ_API_KEY`, pooled `DATABASE_URL`, `FRONTEND_URL`
+- [ ] `GET /health` → 200
+- [ ] `POST /rag/query` streams tokens
+- [ ] Vercel `NEXT_PUBLIC_API_URL` → Render
+- [ ] CORS: no trailing slash mismatch
+- [ ] README Live URLs + cold-start note
+- [ ] Rotate Neon password if it was exposed
 
 ---
 
 ## 7. Out of scope
 
-- Anthropic prompt caching as a prod dependency  
-- AWS GPU / self-hosted Ollama  
+- Anthropic prompt caching as a prod dependency
+- AWS GPU / self-hosted Ollama
 - Session 6 HITL UI on Vercel (follow-up)

@@ -13,16 +13,24 @@ type Message = {
   meta?: string;
 };
 
+const EXAMPLE_QUESTIONS = [
+  "How do I get a refund?",
+  "How do I reset my password?",
+  "How do I cancel my subscription?",
+  "How can I track my order?",
+  "How do I update my billing information?",
+  "How do I set up two-factor authentication?",
+];
+
 export function RagChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const question = input.trim();
-    if (!question || busy) return;
+  async function ask(question: string) {
+    const q = question.trim();
+    if (!q || busy) return;
 
     setInput("");
     setError(null);
@@ -31,7 +39,7 @@ export function RagChat() {
     const userMsg: Message = {
       id: `u-${Date.now()}`,
       role: "user",
-      text: question,
+      text: q,
     };
     const assistantId = `a-${Date.now()}`;
     setMessages((m) => [
@@ -41,7 +49,7 @@ export function RagChat() {
     ]);
 
     try {
-      const res = await ragQuery(question);
+      const res = await ragQuery(q);
       const contentType = res.headers.get("content-type") ?? "";
 
       if (!res.ok) {
@@ -143,13 +151,46 @@ export function RagChat() {
     }
   }
 
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void ask(input);
+  }
+
   return (
     <>
       <h1>Knowledge-base Q&amp;A</h1>
       <p style={{ color: "#555", fontSize: 14 }}>
-        Streams from Nest <code>POST /rag/query</code> via{" "}
-        <code>lib/api.ts</code>. Try “How do I get a refund?”
+        Ask a support question grounded in our demo knowledge base. Click an
+        example to see streaming retrieval + generation:
       </p>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 16,
+        }}
+      >
+        {EXAMPLE_QUESTIONS.map((q) => (
+          <button
+            key={q}
+            type="button"
+            disabled={busy}
+            onClick={() => void ask(q)}
+            style={{
+              padding: "6px 10px",
+              fontSize: 13,
+              borderRadius: 6,
+              border: "1px solid #cbd5e1",
+              background: "#fff",
+              cursor: busy ? "not-allowed" : "pointer",
+              textAlign: "left",
+            }}
+          >
+            {q}
+          </button>
+        ))}
+      </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {messages.map((message) => (

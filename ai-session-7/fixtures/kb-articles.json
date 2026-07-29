@@ -1,26 +1,26 @@
 [
   {
     "title": "How to reset your password",
-    "content": "To reset your password, click Forgot Password on the login page. Enter your email and we will send a reset link. The link expires after 24 hours."
+    "content": "If you forgot your password or need to reset your login credentials, use the Forgot Password link on the login page. Enter the email address associated with your account and we will send a secure password reset link. Open the email and follow the link to choose a new password. The reset link expires after 24 hours for security. If you do not see the email, check your spam folder or request a new link."
   },
   {
     "title": "Requesting a refund",
-    "content": "Refunds are processed within 5 to 7 business days. Go to Order History, select the order, click Request Refund. Only available within 30 days of purchase."
+    "content": "You can get a refund or request your money back within 30 days of purchase. Go to Order History, select the order, and click Request Refund. Refunds are processed within 5 to 7 business days and returned to the original payment method. Only eligible orders inside the 30-day window can be refunded. If your request is outside that window or the order is not eligible, the Request Refund option will not be available."
   },
   {
     "title": "Cancelling your subscription",
-    "content": "Cancel at any time from Account Settings. Access continues until end of current billing period."
+    "content": "You can cancel your subscription at any time from Account Settings. Open Account Settings, find the Subscription section, and choose Cancel Subscription. Confirm the cancellation when prompted. You keep full access until the end of your current billing period. After that period ends, your plan will not renew and you will not be charged again."
   },
   {
     "title": "Tracking your order",
-    "content": "You receive a tracking email within 24 hours of shipping. Click the link to see real-time delivery status."
+    "content": "After your order ships, you can track delivery status in real time. We send a tracking email within 24 hours of shipping with a link to live status updates. Click the link in that email to see where your package is and the estimated delivery date. If you have not received a tracking email within 24 hours of the ship confirmation, check spam or contact support with your order number."
   },
   {
     "title": "Updating your billing information",
-    "content": "Go to Account Settings, select Billing, click Update Payment Method. We accept Visa, Mastercard, and UPI."
+    "content": "To update your payment method or billing details, go to Account Settings, open Billing, and click Update Payment Method. Enter your new card or payment details and save the changes. We accept Visa, Mastercard, and UPI. Updated billing information applies to future charges on your subscription or orders. Make sure the name and billing address match your payment provider to avoid failed charges."
   },
   {
     "title": "Two-factor authentication setup",
-    "content": "Go to Account Settings, select Security, click Enable 2FA. Scan the QR code with Google Authenticator or Authy."
+    "content": "Two-factor authentication (2FA) adds an extra layer of security to your account. Go to Account Settings, select Security, and click Enable 2FA. Scan the on-screen QR code with Google Authenticator or Authy. Enter the six-digit code from the authenticator app to confirm setup. After 2FA is enabled, you will need both your password and a code from the app each time you sign in."
   }
 ]

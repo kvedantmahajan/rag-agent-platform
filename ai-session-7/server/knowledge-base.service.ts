@@ -27,7 +27,7 @@ export class KnowledgeBaseService implements OnModuleInit, OnModuleDestroy {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private embedder: any = null;
     private readonly pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-    private readonly SIMILARITY_THRESHOLD = 0.55;
+    private readonly SIMILARITY_THRESHOLD = 0.42;
 
     async onModuleInit() {
         this.embedder = await pipeline(
