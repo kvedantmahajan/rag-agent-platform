@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build:web",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- app lib public next.config.ts next.config.mjs vercel.json package.json package-lock.json tsconfig.json next-env.d.ts"
+}

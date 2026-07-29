@@ -22,16 +22,16 @@ Support and internal-docs Q&A fails in two common ways: the model **hallucinates
 ## Architecture
 
 ```text
-Browser (Next.js · Vercel · ai-session-5)
+Browser (Next.js · Vercel · ai-session-7/app)
         │
         ▼
-NestJS API (Render · ai-session-7)
+NestJS API (Render · ai-session-7/server)
         │
         ├──► Postgres + pgvector (Neon)
         └──► Groq HTTPS API
 ```
 
-The browser talks only to NestJS. LLM calls and vector search stay on the API — not in Next.js route handlers — so auth, retrieval policy, and model choice remain server-side.
+Both UI and API live in `ai-session-7`. The browser talks only to NestJS (`lib/api.ts` → `NEXT_PUBLIC_API_URL`). No Next.js `app/api` routes.
 
 Deploy details: [docs/deployment.md](docs/deployment.md). Blueprint: [render.yaml](render.yaml).
 
@@ -50,7 +50,7 @@ Deploy details: [docs/deployment.md](docs/deployment.md). Blueprint: [render.yam
 | -------------- | ------------------------------------------------------------------------------------------ |
 | **Retrieval**  | Embeddings → `pgvector` similarity search, confidence thresholding, chunking / MMR options |
 | **Generation** | Context-only prompting, citations / `SOURCES`, streaming SSE, model routing + retry        |
-| **UI**         | Next.js chat surfaces via Vercel AI SDK (`useChat` / structured outputs)                   |
+| **UI**         | Next.js chat in `ai-session-7` streaming Nest `POST /rag/query` via `lib/api.ts`           |
 | **Agents**     | LangGraph tool-calling flows with interrupt / resume (e.g. refund approval)                |
 | **Ops**        | Health checks, CORS, env fail-fast, RAGAS eval harness as CI gate                          |
 
@@ -58,10 +58,10 @@ Deploy details: [docs/deployment.md](docs/deployment.md). Blueprint: [render.yam
 
 ## Tech stack
 
-- **API:** NestJS, TypeScript, Zod (`ai-session-7`)
+- **API:** NestJS, TypeScript, Zod (`ai-session-7/server`)
 - **Data:** PostgreSQL, pgvector, Xenova embeddings
 - **LLM:** Groq (production); Ollama optional locally
-- **Frontend:** Next.js App Router, Vercel AI SDK (`ai-session-5`)
+- **Frontend:** Next.js App Router (`ai-session-7/app`, `lib/api.ts`)
 - **Agents:** LangGraph.js, human-in-the-loop (`ai-session-6`)
 - **Hosting:** Render · Neon · Vercel
 
@@ -71,34 +71,26 @@ Deploy details: [docs/deployment.md](docs/deployment.md). Blueprint: [render.yam
 
 ```bash
 cd ai-session-7
-cp .env.example .env   # GROQ_API_KEY, DATABASE_URL
+cp .env.example .env   # GROQ_API_KEY, DATABASE_URL, NEXT_PUBLIC_API_URL
 npm install
 npm run seed:kb        # no-op if kb_articles already filled
-npm run dev:api        # http://localhost:3000
-
-# UI (separate terminal)
-cd ../ai-session-5
-cp .env.example .env
-npm install
-npm run dev:web        # http://localhost:3001
+npm run dev:api        # Nest http://localhost:3001
+npm run dev:web        # Next http://localhost:3000  (separate terminal)
 ```
 
-Production build (Render):
-
-```bash
-cd ai-session-7 && npm run build && npm run start
-```
+Production Nest (Render): `npm run build && npm run start`  
+Production Next (Vercel): root `ai-session-7`, build `npm run build:web`
 
 ---
 
 ## Repository map
 
-| Path               | Role                                  |
-| ------------------ | ------------------------------------- |
-| `ai-session-7`     | **Production Nest API** (deploy unit) |
-| `ai-session-5`     | Next.js RAG UI (Vercel)               |
-| `ai-session-6`     | LangGraph agents + HITL UI            |
-| `ai-session-1`–`4` | Curriculum building blocks            |
+| Path               | Role                                              |
+| ------------------ | ------------------------------------------------- |
+| `ai-session-7`     | **Prod unit** — Nest API (Render) + Next UI (Vercel) |
+| `ai-session-5`     | Curriculum RAG UI (earlier session; not deploy unit) |
+| `ai-session-6`     | LangGraph agents + HITL UI                        |
+| `ai-session-1`–`4` | Curriculum building blocks                        |
 
 ---
 

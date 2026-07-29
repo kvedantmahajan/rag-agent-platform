@@ -3,16 +3,16 @@
 Target stack for `rag-agent-platform` production demos and resume live URLs.
 
 ```text
-Browser (Next.js on Vercel — ai-session-5)
+Browser (Next.js on Vercel — ai-session-7/app)
         │
         ▼
-NestJS API (Render — ai-session-7)
+NestJS API (Render — ai-session-7/server)
         │
         ├──► Postgres + pgvector (Neon, pooled URL)
         └──► Groq HTTPS API  (managed model)
 ```
 
-This path **does not** require Anthropic, AWS GPUs, or Ollama in the cloud.
+This path **does not** require Anthropic, AWS GPUs, or Ollama in the cloud. UI and API both live under `ai-session-7` (no Next `app/api` folder — `lib/api.ts` calls Nest).
 
 ---
 
@@ -20,8 +20,15 @@ This path **does not** require Anthropic, AWS GPUs, or Ollama in the cloud.
 
 | App | Source | Host |
 |-----|--------|------|
-| **Production Nest API** | `ai-session-7` | Render (`render.yaml`) |
-| **RAG UI** | `ai-session-5` (Next.js only) | Vercel |
+| **Production Nest API** | `ai-session-7` (`npm run build` → `dist/`) | Render (`render.yaml`) |
+| **RAG UI** | `ai-session-7` Next app (`npm run build:web`) | Vercel |
+
+Path filters avoid rebuilding both on every push:
+
+- **Render** (`render.yaml` `buildFilter`): Nest only when `server/`, `fixtures/`, or shared `package.json` / lockfile / `render.yaml` change
+- **Vercel** (`vercel.json` `ignoreCommand`): Next skipped unless `app/`, `lib/`, Next config, or shared package files change
+
+Shared `package.json` changes still trigger both (expected).
 
 Primary API routes on Render:
 
@@ -30,7 +37,7 @@ Primary API routes on Render:
 | `GET /health` | Render health check (after embedder warm) |
 | `POST /rag/query` | Production RAG (routing, retry, SSE) |
 
-Session 5 UI pages that call `/rag/chat*` expect the Session 5 Nest shape. For the Session 7 ship, smoke the API with `/health` and `/rag/query`; point `NEXT_PUBLIC_API_URL` at Render when aligning UI routes, or keep Session 5 Nest for those chat pages locally.
+First Nest boot with pooled `DATABASE_URL` runs `KnowledgeBaseService` schema + seed-from-fixtures if empty.
 
 ---
 
@@ -38,16 +45,9 @@ Session 5 UI pages that call `/rag/chat*` expect the Session 5 Nest shape. For t
 
 1. Create project (e.g. Singapore / `ap-southeast-1`).
 2. Enable extension: `CREATE EXTENSION IF NOT EXISTS vector;`
-3. Copy **pooled** connection string (`…-pooler.…`, `sslmode=require`) for Render.
-4. Seed (once), using **direct** URL locally if preferred:
-
-   ```bash
-   cd ai-session-7
-   DATABASE_URL='postgresql://…@ep-….neon.tech/neondb?sslmode=require' \
-     npm run seed:kb -- --force
-   ```
-
-5. Verify: `SELECT COUNT(*) FROM kb_articles;` → **6**
+3. Copy **pooled** connection string (`…-pooler.…`, `sslmode=require`) into Render `DATABASE_URL`.
+4. On first Nest boot, `KnowledgeBaseService` ensures schema and seeds from `fixtures/kb-articles.json` if empty.
+5. Verify after deploy: `SELECT COUNT(*) FROM kb_articles;` → **6**
 
 **Never commit** Neon passwords. Rotate if a URL was pasted into chat/logs.
 
@@ -77,12 +77,13 @@ Cold start on free tier can take ~30s (embedder load in `onModuleInit`). Health 
 
 ---
 
-## 4. Vercel (Next — `ai-session-5`)
+## 4. Vercel (Next — `ai-session-7`)
 
-1. Import repo; **Root Directory** = `ai-session-5`
-2. Env: `NEXT_PUBLIC_API_URL=https://rag-agent-platform.onrender.com` (your Render URL)
-3. Redeploy after changing `NEXT_PUBLIC_*`
-4. Set matching `FRONTEND_URL` on Render, then redeploy Nest
+1. Import repo; **Root Directory** = `ai-session-7`
+2. Build command: `npm run build:web` (see `vercel.json`)
+3. Env: `NEXT_PUBLIC_API_URL=https://rag-agent-platform.onrender.com` (your Render URL, no trailing slash)
+4. Redeploy after changing `NEXT_PUBLIC_*`
+5. Set matching `FRONTEND_URL` on Render, then redeploy Nest
 
 ---
 
@@ -90,9 +91,9 @@ Cold start on free tier can take ~30s (embedder load in `onModuleInit`). Health 
 
 | Concern | Local | Production |
 |---------|--------|------------|
-| API | `npm run dev:api` / `tsx` in `ai-session-7` | Render `npm run start` |
+| API | `npm run dev:api` → `:3001` | Render `npm run start` |
 | DB | `rag_kb` or Neon | Neon pooled |
-| Front | `ai-session-5` `:3001` | Vercel |
+| Front | `npm run dev:web` → `:3000` | Vercel (`ai-session-7`) |
 | LLM | Groq (optional Ollama) | Groq only |
 
 ---

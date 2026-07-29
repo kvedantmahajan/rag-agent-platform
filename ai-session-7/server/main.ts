@@ -18,8 +18,8 @@ async function bootstrap() {
 
     const origins = [
         process.env.FRONTEND_URL,
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
     ].filter((o): o is string => Boolean(o && o.trim()));
 
     app.enableCors({
@@ -29,7 +29,8 @@ async function bootstrap() {
     });
 
     // Render sets PORT automatically — never hardcode
-    const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3000);
+    // Local default 3001 matches lib/api.ts NEXT_PUBLIC_API_URL fallback
+    const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
     await app.listen(port);
     console.log(`NestJS running on port ${port}`);
 }

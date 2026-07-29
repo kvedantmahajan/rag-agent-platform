@@ -7,6 +7,19 @@ services:
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start
     healthCheckPath: /health
+    # Only redeploy Nest when API-related paths change (repo-root globs)
+    buildFilter:
+      paths:
+        - ai-session-7/server/**
+        - ai-session-7/fixtures/**
+        - ai-session-7/package.json
+        - ai-session-7/package-lock.json
+        - render.yaml
+      ignoredPaths:
+        - ai-session-7/app/**
+        - ai-session-7/lib/**
+        - docs/**
+        - README.md
     envVars:
       - key: NODE_ENV
         value: production
